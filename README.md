@@ -48,7 +48,7 @@ gen_fixtures.py               fixture generator
 bench.py                      verify (correctness) + latency phases; --kubecontext/--out-prefix for any cluster
 scale_run.py                  latency vs policy count (0/5/10/15), repeat runs
 drift_run.py                  drift-detection trials (webhook engines)
-bench-eks.ps1 / bench-eks3.ps1  cloud-leg runners (engine install -> bench -> full uninstall)
+bench-eks.ps1                 cloud-leg runner: all four engines, install -> bench -> verified-clean uninstall
 make_figures.py               regenerates the paper's figures from the CSVs
 verify_*.csv latency_*.csv latency_scale.csv drift_detection.csv   local raw data
 cloud-eks_*.csv               EKS raw data
@@ -160,7 +160,7 @@ and prefix the outputs so nothing is overwritten:
 python bench.py --engine vap --phase both --kubecontext my-prod-cluster --out-prefix mycluster_
 ```
 
-`bench-eks.ps1` / `bench-eks3.ps1` are the exact runners used for the paper's
+`bench-eks.ps1` is the runner used for the paper's
 EKS leg (engine install → bench → verified-clean uninstall, all four engines
 in sequence).
 
