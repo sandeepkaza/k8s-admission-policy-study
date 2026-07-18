@@ -26,6 +26,7 @@ from kubernetes.client.rest import ApiException
 NS = "bench"
 WARMUP = 20
 SAMPLES = 100
+OUT_PREFIX = ""
 RULES = [f"R{i:02d}" for i in range(1, 16)]
 
 
@@ -94,7 +95,7 @@ def phase_verify(core, engine):
         if admitted:
             delete_quiet(core, fixture)
 
-    out = f"verify_{engine}.csv"
+    out = f"{OUT_PREFIX}verify_{engine}.csv"
     with open(out, "w", newline="", encoding="utf-8") as f:
         w = csv.DictWriter(f, fieldnames=["engine", "rule", "expected", "actual", "ok", "msg"])
         w.writeheader()
@@ -116,7 +117,7 @@ def phase_latency(core, engine):
         if not admitted:
             raise SystemExit(f"latency probe denied under {engine}: {msg}")
         samples.append(dt * 1000)
-    out = f"latency_{engine}.csv"
+    out = f"{OUT_PREFIX}latency_{engine}.csv"
     with open(out, "w", newline="", encoding="utf-8") as f:
         w = csv.writer(f)
         w.writerow(["engine", "sample_ms"])
@@ -132,9 +133,15 @@ def main():
     ap.add_argument("--engine", required=True,
                     choices=["baseline", "vap", "gatekeeper", "kyverno"])
     ap.add_argument("--phase", default="both", choices=["verify", "latency", "both"])
+    ap.add_argument("--kubecontext", default=None,
+                    help="kubeconfig context (default: current)")
+    ap.add_argument("--out-prefix", default="",
+                    help="prefix for output CSVs, e.g. cloud-eks_")
     args = ap.parse_args()
+    global OUT_PREFIX
+    OUT_PREFIX = args.out_prefix
 
-    config.load_kube_config()
+    config.load_kube_config(context=args.kubecontext)
     core = client.CoreV1Api()
     ensure_ns(core)
 

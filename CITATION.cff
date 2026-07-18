@@ -1,0 +1,28 @@
+cff-version: 1.2.0
+message: "If you use this corpus, harness, or dataset, please cite it as below."
+title: "Kubernetes Admission-Policy Engine Study: 15-Rule Corpus, Benchmark Harness, and Local + EKS Datasets"
+type: software
+authors:
+  - family-names: "Kaza"
+    given-names: "Venkata Sandeep Chowdary"
+    orcid: "https://orcid.org/0009-0001-9454-8995"
+repository-code: "https://github.com/sandeepkaza/k8s-admission-policy-study"
+license: MIT
+date-released: "2026-07-18"
+keywords:
+  - kubernetes
+  - admission control
+  - policy as code
+  - kyverno
+  - gatekeeper
+  - CEL
+  - benchmarking
+preferred-citation:
+  type: article
+  title: "Native CEL or Webhook? An Empirical Comparison of Kubernetes Admission-Policy Engines"
+  authors:
+    - family-names: "Kaza"
+      given-names: "Venkata Sandeep Chowdary"
+      orcid: "https://orcid.org/0009-0001-9454-8995"
+  year: 2026
+  notes: "Preprint DOI to be added upon deposit."

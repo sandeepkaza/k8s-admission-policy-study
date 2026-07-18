@@ -87,3 +87,19 @@ the reproducible claims. See the paper's threats-to-validity section.
 
 MIT (see [LICENSE](LICENSE)). Rule sources (CIS Kubernetes Benchmark, Pod
 Security Standards, NIST SP 800-190) are cited in `corpus/corpus.yaml`.
+
+## Cloud leg (EKS, 2026-07-18)
+
+The identical corpus, fixtures, and harness rerun on a managed Amazon EKS
+cluster (K8s 1.34): correctness replicates 17/17 for every engine, and the
+overhead ordering VAP (+3.3 ms) < Kyverno (+9.4) < Gatekeeper (+14.1) holds on
+a real control plane. New finding: Gatekeeper's default deployment
+(3x512 MiB + audit) is unschedulable on 1-GiB nodes; Kyverno (128 MiB) and VAP
+(no pods) deploy unchanged. Data: `cloud-eks_*.csv`; runners: `bench-eks*.ps1`
+(engine install manifests: upstream Gatekeeper v3.20.1 / Kyverno v1.15.2
+release YAMLs). Benchmark your own cluster:
+`python bench.py --engine vap --phase both --kubecontext <ctx> --out-prefix mycluster_`.
+
+## Citing
+
+See `CITATION.cff` (GitHub's "Cite this repository" button).

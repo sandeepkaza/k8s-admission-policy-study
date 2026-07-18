@@ -102,3 +102,27 @@ but stale configs linger).
 ## Still to run / optional
 - [ ] Latency vs object size (small vs large pod spec) — nice-to-have
 - [ ] Optional scope extension (needs user's Azure sub): Azure Policy scan-latency section
+
+## Cloud leg (EKS, 2026-07-18)
+
+Real managed cluster: EKS `dr-eks` us-east-1, K8s 1.34.9, 4x t3.micro.
+Same 15-rule corpus, fixtures, harness (`bench.py --kubecontext dr-eks`);
+outputs `cloud-eks_*.csv`. Client on Windows over WAN -> absolute latencies
+include internet RTT; the comparable quantity is the per-engine DELTA vs the
+same-path baseline.
+
+| engine | verify | median ms | delta vs baseline | p95 ms |
+|---|---|---|---|---|
+| baseline | 17/17 | 94.8 | - | 106.6 |
+| VAP | 17/17 | 98.1 | +3.3 | 108.8 |
+| Kyverno | 17/17 | 104.1 | +9.4 | 135.3 |
+| Gatekeeper | 17/17 | 108.9 | +14.1 | 171.1 |
+
+Findings: (1) correctness 17/17 for all engines replicates; (2) overhead
+ordering VAP < Kyverno < Gatekeeper replicates on a managed control plane
+(local deltas +5.9/+7.6/+10.3); (3) Gatekeeper's tail dominance replicates
+(p95 171ms, ~1.6x its own median). (4) Deployability asymmetry: default
+Gatekeeper footprint (3 replicas x 512Mi + audit 512Mi) is UNSCHEDULABLE on
+1-GiB nodes - benchmarked at 1 replica / 200Mi request (config delta noted);
+Kyverno (128Mi) and VAP (zero pods) deploy unchanged. Engine resource
+footprint is a first-class selection criterion on constrained clusters.
