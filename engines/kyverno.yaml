@@ -1,0 +1,283 @@
+# Kyverno implementations of the reference corpus (R01–R15).
+# One ClusterPolicy per requirement; validationFailureAction=Enforce.
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: r01-disallow-privileged
+  annotations: {corpus/id: R01}
+spec:
+  validationFailureAction: Enforce
+  background: false
+  rules:
+    - name: privileged
+      match: {any: [{resources: {kinds: [Pod]}}]}
+      validate:
+        message: "R01: privileged containers are not allowed"
+        pattern:
+          spec:
+            =(ephemeralContainers):
+              - =(securityContext): {=(privileged): "false"}
+            =(initContainers):
+              - =(securityContext): {=(privileged): "false"}
+            containers:
+              - =(securityContext): {=(privileged): "false"}
+---
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: r02-disallow-host-network
+  annotations: {corpus/id: R02}
+spec:
+  validationFailureAction: Enforce
+  background: false
+  rules:
+    - name: host-network
+      match: {any: [{resources: {kinds: [Pod]}}]}
+      validate:
+        message: "R02: hostNetwork is not allowed"
+        pattern:
+          spec: {=(hostNetwork): "false"}
+---
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: r03-disallow-host-pid-ipc
+  annotations: {corpus/id: R03}
+spec:
+  validationFailureAction: Enforce
+  background: false
+  rules:
+    - name: host-pid-ipc
+      match: {any: [{resources: {kinds: [Pod]}}]}
+      validate:
+        message: "R03: hostPID and hostIPC are not allowed"
+        pattern:
+          spec: {=(hostPID): "false", =(hostIPC): "false"}
+---
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: r04-disallow-hostpath
+  annotations: {corpus/id: R04}
+spec:
+  validationFailureAction: Enforce
+  background: false
+  rules:
+    - name: hostpath
+      match: {any: [{resources: {kinds: [Pod]}}]}
+      validate:
+        message: "R04: hostPath volumes are not allowed"
+        pattern:
+          spec:
+            =(volumes):
+              - X(hostPath): "null"
+---
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: r05-require-run-as-nonroot
+  annotations: {corpus/id: R05}
+spec:
+  validationFailureAction: Enforce
+  background: false
+  rules:
+    - name: run-as-nonroot
+      match: {any: [{resources: {kinds: [Pod]}}]}
+      validate:
+        message: "R05: runAsNonRoot must be true"
+        anyPattern:
+          - spec:
+              securityContext: {runAsNonRoot: true}
+          - spec:
+              containers:
+                - securityContext: {runAsNonRoot: true}
+---
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: r06-disallow-privilege-escalation
+  annotations: {corpus/id: R06}
+spec:
+  validationFailureAction: Enforce
+  background: false
+  rules:
+    - name: privilege-escalation
+      match: {any: [{resources: {kinds: [Pod]}}]}
+      validate:
+        message: "R06: allowPrivilegeEscalation must be false"
+        pattern:
+          spec:
+            containers:
+              - securityContext: {allowPrivilegeEscalation: "false"}
+---
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: r07-drop-all-capabilities
+  annotations: {corpus/id: R07}
+spec:
+  validationFailureAction: Enforce
+  background: false
+  rules:
+    - name: drop-all
+      match: {any: [{resources: {kinds: [Pod]}}]}
+      validate:
+        message: "R07: containers must drop ALL capabilities"
+        foreach:
+          - list: request.object.spec.containers
+            deny:
+              conditions:
+                all:
+                  - key: ALL
+                    operator: AnyNotIn
+                    value: "{{ element.securityContext.capabilities.drop || `[]` }}"
+---
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: r08-disallow-latest-tag
+  annotations: {corpus/id: R08}
+spec:
+  validationFailureAction: Enforce
+  background: false
+  rules:
+    - name: latest-tag
+      match: {any: [{resources: {kinds: [Pod]}}]}
+      validate:
+        message: "R08: image tag required and must not be latest"
+        pattern:
+          spec:
+            containers:
+              - image: "!*:latest & *:*"
+---
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: r09-require-resource-limits
+  annotations: {corpus/id: R09}
+spec:
+  validationFailureAction: Enforce
+  background: false
+  rules:
+    - name: limits
+      match: {any: [{resources: {kinds: [Pod]}}]}
+      validate:
+        message: "R09: cpu and memory limits required"
+        pattern:
+          spec:
+            containers:
+              - resources:
+                  limits: {cpu: "?*", memory: "?*"}
+---
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: r10-allowed-registries
+  annotations: {corpus/id: R10}
+spec:
+  validationFailureAction: Enforce
+  background: false
+  rules:
+    - name: registries
+      match: {any: [{resources: {kinds: [Pod]}}]}
+      validate:
+        message: "R10: images must come from registry.example.com or docker.io/library"
+        pattern:
+          spec:
+            containers:
+              - image: "registry.example.com/* | docker.io/library/* | library/*"
+---
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: r11-require-app-label
+  annotations: {corpus/id: R11}
+spec:
+  validationFailureAction: Enforce
+  background: false
+  rules:
+    - name: app-label
+      match: {any: [{resources: {kinds: [Pod]}}]}
+      validate:
+        message: "R11: label app.kubernetes.io/name is required"
+        pattern:
+          metadata:
+            labels:
+              app.kubernetes.io/name: "?*"
+---
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: r12-disallow-nodeport
+  annotations: {corpus/id: R12}
+spec:
+  validationFailureAction: Enforce
+  background: false
+  rules:
+    - name: nodeport
+      match: {any: [{resources: {kinds: [Service]}}]}
+      validate:
+        message: "R12: NodePort services are not allowed"
+        pattern:
+          spec: {=(type): "!NodePort"}
+---
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: r13-require-readonly-rootfs
+  annotations: {corpus/id: R13}
+spec:
+  validationFailureAction: Enforce
+  background: false
+  rules:
+    - name: readonly-rootfs
+      match: {any: [{resources: {kinds: [Pod]}}]}
+      validate:
+        message: "R13: readOnlyRootFilesystem must be true"
+        pattern:
+          spec:
+            containers:
+              - securityContext: {readOnlyRootFilesystem: "true"}
+---
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: r14-disallow-default-sa-automount
+  annotations: {corpus/id: R14}
+spec:
+  validationFailureAction: Enforce
+  background: false
+  rules:
+    - name: sa-automount
+      match: {any: [{resources: {kinds: [Pod]}}]}
+      preconditions:
+        all:
+          - key: "{{ request.object.spec.serviceAccountName || 'default' }}"
+            operator: Equals
+            value: default
+      validate:
+        message: "R14: default SA token automount must be disabled"
+        pattern:
+          spec: {automountServiceAccountToken: "false"}
+---
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: r15-require-seccomp
+  annotations: {corpus/id: R15}
+spec:
+  validationFailureAction: Enforce
+  background: false
+  rules:
+    - name: seccomp
+      match: {any: [{resources: {kinds: [Pod]}}]}
+      validate:
+        message: "R15: seccompProfile.type=RuntimeDefault required"
+        anyPattern:
+          - spec:
+              securityContext:
+                seccompProfile: {type: RuntimeDefault}
+          - spec:
+              containers:
+                - securityContext:
+                    seccompProfile: {type: RuntimeDefault}

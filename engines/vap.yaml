@@ -1,0 +1,422 @@
+# Native ValidatingAdmissionPolicy (CEL) implementations of the corpus (R01–R15).
+# Requires Kubernetes >= 1.30 (VAP GA). One policy + one binding per requirement.
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicy
+metadata:
+  name: r01-disallow-privileged
+spec:
+  failurePolicy: Fail
+  matchConstraints:
+    resourceRules:
+      - apiGroups: [""]
+        apiVersions: [v1]
+        operations: [CREATE, UPDATE]
+        resources: [pods]
+  validations:
+    - expression: >-
+        object.spec.containers.all(c, !has(c.securityContext) || !has(c.securityContext.privileged) || c.securityContext.privileged == false)
+        && (!has(object.spec.initContainers) || object.spec.initContainers.all(c, !has(c.securityContext) || !has(c.securityContext.privileged) || c.securityContext.privileged == false))
+      message: "R01: privileged containers are not allowed"
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicyBinding
+metadata:
+  name: r01-disallow-privileged
+spec:
+  policyName: r01-disallow-privileged
+  validationActions: [Deny]
+  matchResources:
+    namespaceSelector:
+      matchLabels: {bench: "true"}
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicy
+metadata:
+  name: r02-disallow-host-network
+spec:
+  failurePolicy: Fail
+  matchConstraints:
+    resourceRules:
+      - apiGroups: [""]
+        apiVersions: [v1]
+        operations: [CREATE, UPDATE]
+        resources: [pods]
+  validations:
+    - expression: "!has(object.spec.hostNetwork) || object.spec.hostNetwork == false"
+      message: "R02: hostNetwork is not allowed"
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicyBinding
+metadata:
+  name: r02-disallow-host-network
+spec:
+  policyName: r02-disallow-host-network
+  validationActions: [Deny]
+  matchResources:
+    namespaceSelector:
+      matchLabels: {bench: "true"}
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicy
+metadata:
+  name: r03-disallow-host-pid-ipc
+spec:
+  failurePolicy: Fail
+  matchConstraints:
+    resourceRules:
+      - apiGroups: [""]
+        apiVersions: [v1]
+        operations: [CREATE, UPDATE]
+        resources: [pods]
+  validations:
+    - expression: >-
+        (!has(object.spec.hostPID) || object.spec.hostPID == false) && (!has(object.spec.hostIPC) || object.spec.hostIPC == false)
+      message: "R03: hostPID and hostIPC are not allowed"
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicyBinding
+metadata:
+  name: r03-disallow-host-pid-ipc
+spec:
+  policyName: r03-disallow-host-pid-ipc
+  validationActions: [Deny]
+  matchResources:
+    namespaceSelector:
+      matchLabels: {bench: "true"}
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicy
+metadata:
+  name: r04-disallow-hostpath
+spec:
+  failurePolicy: Fail
+  matchConstraints:
+    resourceRules:
+      - apiGroups: [""]
+        apiVersions: [v1]
+        operations: [CREATE, UPDATE]
+        resources: [pods]
+  validations:
+    - expression: "!has(object.spec.volumes) || object.spec.volumes.all(v, !has(v.hostPath))"
+      message: "R04: hostPath volumes are not allowed"
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicyBinding
+metadata:
+  name: r04-disallow-hostpath
+spec:
+  policyName: r04-disallow-hostpath
+  validationActions: [Deny]
+  matchResources:
+    namespaceSelector:
+      matchLabels: {bench: "true"}
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicy
+metadata:
+  name: r05-require-run-as-nonroot
+spec:
+  failurePolicy: Fail
+  matchConstraints:
+    resourceRules:
+      - apiGroups: [""]
+        apiVersions: [v1]
+        operations: [CREATE, UPDATE]
+        resources: [pods]
+  validations:
+    - expression: >-
+        (has(object.spec.securityContext) && has(object.spec.securityContext.runAsNonRoot) && object.spec.securityContext.runAsNonRoot == true)
+        || object.spec.containers.all(c, has(c.securityContext) && has(c.securityContext.runAsNonRoot) && c.securityContext.runAsNonRoot == true)
+      message: "R05: runAsNonRoot must be true"
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicyBinding
+metadata:
+  name: r05-require-run-as-nonroot
+spec:
+  policyName: r05-require-run-as-nonroot
+  validationActions: [Deny]
+  matchResources:
+    namespaceSelector:
+      matchLabels: {bench: "true"}
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicy
+metadata:
+  name: r06-disallow-privilege-escalation
+spec:
+  failurePolicy: Fail
+  matchConstraints:
+    resourceRules:
+      - apiGroups: [""]
+        apiVersions: [v1]
+        operations: [CREATE, UPDATE]
+        resources: [pods]
+  validations:
+    - expression: >-
+        object.spec.containers.all(c, has(c.securityContext) && has(c.securityContext.allowPrivilegeEscalation) && c.securityContext.allowPrivilegeEscalation == false)
+      message: "R06: allowPrivilegeEscalation must be false"
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicyBinding
+metadata:
+  name: r06-disallow-privilege-escalation
+spec:
+  policyName: r06-disallow-privilege-escalation
+  validationActions: [Deny]
+  matchResources:
+    namespaceSelector:
+      matchLabels: {bench: "true"}
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicy
+metadata:
+  name: r07-drop-all-capabilities
+spec:
+  failurePolicy: Fail
+  matchConstraints:
+    resourceRules:
+      - apiGroups: [""]
+        apiVersions: [v1]
+        operations: [CREATE, UPDATE]
+        resources: [pods]
+  validations:
+    - expression: >-
+        object.spec.containers.all(c, has(c.securityContext) && has(c.securityContext.capabilities) && has(c.securityContext.capabilities.drop) && c.securityContext.capabilities.drop.exists(d, d == 'ALL'))
+      message: "R07: containers must drop ALL capabilities"
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicyBinding
+metadata:
+  name: r07-drop-all-capabilities
+spec:
+  policyName: r07-drop-all-capabilities
+  validationActions: [Deny]
+  matchResources:
+    namespaceSelector:
+      matchLabels: {bench: "true"}
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicy
+metadata:
+  name: r08-disallow-latest-tag
+spec:
+  failurePolicy: Fail
+  matchConstraints:
+    resourceRules:
+      - apiGroups: [""]
+        apiVersions: [v1]
+        operations: [CREATE, UPDATE]
+        resources: [pods]
+  validations:
+    - expression: >-
+        object.spec.containers.all(c, c.image.contains(':') && !c.image.endsWith(':latest'))
+      message: "R08: image tag required and must not be latest"
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicyBinding
+metadata:
+  name: r08-disallow-latest-tag
+spec:
+  policyName: r08-disallow-latest-tag
+  validationActions: [Deny]
+  matchResources:
+    namespaceSelector:
+      matchLabels: {bench: "true"}
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicy
+metadata:
+  name: r09-require-resource-limits
+spec:
+  failurePolicy: Fail
+  matchConstraints:
+    resourceRules:
+      - apiGroups: [""]
+        apiVersions: [v1]
+        operations: [CREATE, UPDATE]
+        resources: [pods]
+  validations:
+    - expression: >-
+        object.spec.containers.all(c, has(c.resources) && has(c.resources.limits) && 'cpu' in c.resources.limits && 'memory' in c.resources.limits)
+      message: "R09: cpu and memory limits required"
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicyBinding
+metadata:
+  name: r09-require-resource-limits
+spec:
+  policyName: r09-require-resource-limits
+  validationActions: [Deny]
+  matchResources:
+    namespaceSelector:
+      matchLabels: {bench: "true"}
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicy
+metadata:
+  name: r10-allowed-registries
+spec:
+  failurePolicy: Fail
+  matchConstraints:
+    resourceRules:
+      - apiGroups: [""]
+        apiVersions: [v1]
+        operations: [CREATE, UPDATE]
+        resources: [pods]
+  validations:
+    - expression: >-
+        object.spec.containers.all(c, c.image.startsWith('registry.example.com/') || c.image.startsWith('docker.io/library/') || c.image.startsWith('library/'))
+      message: "R10: images must come from an allowlisted registry"
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicyBinding
+metadata:
+  name: r10-allowed-registries
+spec:
+  policyName: r10-allowed-registries
+  validationActions: [Deny]
+  matchResources:
+    namespaceSelector:
+      matchLabels: {bench: "true"}
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicy
+metadata:
+  name: r11-require-app-label
+spec:
+  failurePolicy: Fail
+  matchConstraints:
+    resourceRules:
+      - apiGroups: [""]
+        apiVersions: [v1]
+        operations: [CREATE, UPDATE]
+        resources: [pods]
+  validations:
+    - expression: >-
+        has(object.metadata.labels) && 'app.kubernetes.io/name' in object.metadata.labels && object.metadata.labels['app.kubernetes.io/name'] != ''
+      message: "R11: label app.kubernetes.io/name is required"
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicyBinding
+metadata:
+  name: r11-require-app-label
+spec:
+  policyName: r11-require-app-label
+  validationActions: [Deny]
+  matchResources:
+    namespaceSelector:
+      matchLabels: {bench: "true"}
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicy
+metadata:
+  name: r12-disallow-nodeport
+spec:
+  failurePolicy: Fail
+  matchConstraints:
+    resourceRules:
+      - apiGroups: [""]
+        apiVersions: [v1]
+        operations: [CREATE, UPDATE]
+        resources: [services]
+  validations:
+    - expression: "!has(object.spec.type) || object.spec.type != 'NodePort'"
+      message: "R12: NodePort services are not allowed"
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicyBinding
+metadata:
+  name: r12-disallow-nodeport
+spec:
+  policyName: r12-disallow-nodeport
+  validationActions: [Deny]
+  matchResources:
+    namespaceSelector:
+      matchLabels: {bench: "true"}
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicy
+metadata:
+  name: r13-require-readonly-rootfs
+spec:
+  failurePolicy: Fail
+  matchConstraints:
+    resourceRules:
+      - apiGroups: [""]
+        apiVersions: [v1]
+        operations: [CREATE, UPDATE]
+        resources: [pods]
+  validations:
+    - expression: >-
+        object.spec.containers.all(c, has(c.securityContext) && has(c.securityContext.readOnlyRootFilesystem) && c.securityContext.readOnlyRootFilesystem == true)
+      message: "R13: readOnlyRootFilesystem must be true"
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicyBinding
+metadata:
+  name: r13-require-readonly-rootfs
+spec:
+  policyName: r13-require-readonly-rootfs
+  validationActions: [Deny]
+  matchResources:
+    namespaceSelector:
+      matchLabels: {bench: "true"}
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicy
+metadata:
+  name: r14-disallow-default-sa-automount
+spec:
+  failurePolicy: Fail
+  matchConstraints:
+    resourceRules:
+      - apiGroups: [""]
+        apiVersions: [v1]
+        operations: [CREATE, UPDATE]
+        resources: [pods]
+  validations:
+    - expression: >-
+        (has(object.spec.serviceAccountName) && object.spec.serviceAccountName != 'default')
+        || (has(object.spec.automountServiceAccountToken) && object.spec.automountServiceAccountToken == false)
+      message: "R14: default SA token automount must be disabled"
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicyBinding
+metadata:
+  name: r14-disallow-default-sa-automount
+spec:
+  policyName: r14-disallow-default-sa-automount
+  validationActions: [Deny]
+  matchResources:
+    namespaceSelector:
+      matchLabels: {bench: "true"}
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicy
+metadata:
+  name: r15-require-seccomp
+spec:
+  failurePolicy: Fail
+  matchConstraints:
+    resourceRules:
+      - apiGroups: [""]
+        apiVersions: [v1]
+        operations: [CREATE, UPDATE]
+        resources: [pods]
+  validations:
+    - expression: >-
+        (has(object.spec.securityContext) && has(object.spec.securityContext.seccompProfile) && object.spec.securityContext.seccompProfile.type == 'RuntimeDefault')
+        || object.spec.containers.all(c, has(c.securityContext) && has(c.securityContext.seccompProfile) && c.securityContext.seccompProfile.type == 'RuntimeDefault')
+      message: "R15: seccompProfile.type=RuntimeDefault required"
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicyBinding
+metadata:
+  name: r15-require-seccomp
+spec:
+  policyName: r15-require-seccomp
+  validationActions: [Deny]
+  matchResources:
+    namespaceSelector:
+      matchLabels: {bench: "true"}

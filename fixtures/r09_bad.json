@@ -1,0 +1,40 @@
+{
+ "apiVersion": "v1",
+ "kind": "Pod",
+ "metadata": {
+  "name": "bad-r09",
+  "labels": {
+   "app.kubernetes.io/name": "bench"
+  }
+ },
+ "spec": {
+  "automountServiceAccountToken": false,
+  "securityContext": {
+   "runAsNonRoot": true,
+   "seccompProfile": {
+    "type": "RuntimeDefault"
+   }
+  },
+  "containers": [
+   {
+    "name": "app",
+    "image": "docker.io/library/nginx:1.27",
+    "resources": {},
+    "securityContext": {
+     "privileged": false,
+     "allowPrivilegeEscalation": false,
+     "readOnlyRootFilesystem": true,
+     "runAsNonRoot": true,
+     "capabilities": {
+      "drop": [
+       "ALL"
+      ]
+     },
+     "seccompProfile": {
+      "type": "RuntimeDefault"
+     }
+    }
+   }
+  ]
+ }
+}

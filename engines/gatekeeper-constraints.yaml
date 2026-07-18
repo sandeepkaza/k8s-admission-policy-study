@@ -1,0 +1,120 @@
+# Constraint instances for the 15 templates. Scoped to bench namespaces.
+apiVersion: constraints.gatekeeper.sh/v1beta1
+kind: R01DisallowPrivileged
+metadata: {name: r01}
+spec:
+  match:
+    kinds: [{apiGroups: [""], kinds: [Pod]}]
+    namespaceSelector: {matchLabels: {bench: "true"}}
+---
+apiVersion: constraints.gatekeeper.sh/v1beta1
+kind: R02DisallowHostNetwork
+metadata: {name: r02}
+spec:
+  match:
+    kinds: [{apiGroups: [""], kinds: [Pod]}]
+    namespaceSelector: {matchLabels: {bench: "true"}}
+---
+apiVersion: constraints.gatekeeper.sh/v1beta1
+kind: R03DisallowHostPidIpc
+metadata: {name: r03}
+spec:
+  match:
+    kinds: [{apiGroups: [""], kinds: [Pod]}]
+    namespaceSelector: {matchLabels: {bench: "true"}}
+---
+apiVersion: constraints.gatekeeper.sh/v1beta1
+kind: R04DisallowHostPath
+metadata: {name: r04}
+spec:
+  match:
+    kinds: [{apiGroups: [""], kinds: [Pod]}]
+    namespaceSelector: {matchLabels: {bench: "true"}}
+---
+apiVersion: constraints.gatekeeper.sh/v1beta1
+kind: R05RequireRunAsNonRoot
+metadata: {name: r05}
+spec:
+  match:
+    kinds: [{apiGroups: [""], kinds: [Pod]}]
+    namespaceSelector: {matchLabels: {bench: "true"}}
+---
+apiVersion: constraints.gatekeeper.sh/v1beta1
+kind: R06DisallowPrivEsc
+metadata: {name: r06}
+spec:
+  match:
+    kinds: [{apiGroups: [""], kinds: [Pod]}]
+    namespaceSelector: {matchLabels: {bench: "true"}}
+---
+apiVersion: constraints.gatekeeper.sh/v1beta1
+kind: R07DropAllCapabilities
+metadata: {name: r07}
+spec:
+  match:
+    kinds: [{apiGroups: [""], kinds: [Pod]}]
+    namespaceSelector: {matchLabels: {bench: "true"}}
+---
+apiVersion: constraints.gatekeeper.sh/v1beta1
+kind: R08DisallowLatestTag
+metadata: {name: r08}
+spec:
+  match:
+    kinds: [{apiGroups: [""], kinds: [Pod]}]
+    namespaceSelector: {matchLabels: {bench: "true"}}
+---
+apiVersion: constraints.gatekeeper.sh/v1beta1
+kind: R09RequireResourceLimits
+metadata: {name: r09}
+spec:
+  match:
+    kinds: [{apiGroups: [""], kinds: [Pod]}]
+    namespaceSelector: {matchLabels: {bench: "true"}}
+---
+apiVersion: constraints.gatekeeper.sh/v1beta1
+kind: R10AllowedRegistries
+metadata: {name: r10}
+spec:
+  match:
+    kinds: [{apiGroups: [""], kinds: [Pod]}]
+    namespaceSelector: {matchLabels: {bench: "true"}}
+---
+apiVersion: constraints.gatekeeper.sh/v1beta1
+kind: R11RequireAppLabel
+metadata: {name: r11}
+spec:
+  match:
+    kinds: [{apiGroups: [""], kinds: [Pod]}]
+    namespaceSelector: {matchLabels: {bench: "true"}}
+---
+apiVersion: constraints.gatekeeper.sh/v1beta1
+kind: R12DisallowNodePort
+metadata: {name: r12}
+spec:
+  match:
+    kinds: [{apiGroups: [""], kinds: [Service]}]
+    namespaceSelector: {matchLabels: {bench: "true"}}
+---
+apiVersion: constraints.gatekeeper.sh/v1beta1
+kind: R13RequireReadonlyRootfs
+metadata: {name: r13}
+spec:
+  match:
+    kinds: [{apiGroups: [""], kinds: [Pod]}]
+    namespaceSelector: {matchLabels: {bench: "true"}}
+---
+apiVersion: constraints.gatekeeper.sh/v1beta1
+kind: R14DisallowDefaultSaAutomount
+metadata: {name: r14}
+spec:
+  match:
+    kinds: [{apiGroups: [""], kinds: [Pod]}]
+    namespaceSelector: {matchLabels: {bench: "true"}}
+---
+apiVersion: constraints.gatekeeper.sh/v1beta1
+kind: R15RequireSeccomp
+metadata: {name: r15}
+spec:
+  match:
+    kinds: [{apiGroups: [""], kinds: [Pod]}]
+    namespaceSelector: {matchLabels: {bench: "true"}}

@@ -1,0 +1,66 @@
+# Reference policy corpus — Paper 2 (K8s admission-control scope).
+# Each requirement maps to a citable baseline control (CIS Kubernetes Benchmark v1.9
+# section, or Pod Security Standards level) so selection can't be called cherry-picked.
+# Implementations live in engines/<engine>/<id>.yaml. Status per engine:
+#   native = expressible natively | partial = expressible with caveats | no = inexpressible
+requirements:
+  - id: R01
+    name: disallow-privileged-containers
+    source: "CIS K8s 5.2.1 / PSS baseline"
+    description: "Reject pods with securityContext.privileged=true"
+  - id: R02
+    name: disallow-host-network
+    source: "CIS K8s 5.2.4 / PSS baseline"
+    description: "Reject pods with hostNetwork=true"
+  - id: R03
+    name: disallow-host-pid-ipc
+    source: "CIS K8s 5.2.2-5.2.3 / PSS baseline"
+    description: "Reject pods with hostPID or hostIPC"
+  - id: R04
+    name: disallow-hostpath-volumes
+    source: "PSS baseline (volumes)"
+    description: "Reject pods mounting hostPath volumes"
+  - id: R05
+    name: require-run-as-nonroot
+    source: "CIS K8s 5.2.6 / PSS restricted"
+    description: "Require runAsNonRoot=true at pod or container level"
+  - id: R06
+    name: disallow-privilege-escalation
+    source: "CIS K8s 5.2.5 / PSS restricted"
+    description: "Require allowPrivilegeEscalation=false on all containers"
+  - id: R07
+    name: drop-all-capabilities
+    source: "PSS restricted (capabilities)"
+    description: "Require capabilities.drop to include ALL"
+  - id: R08
+    name: disallow-latest-tag
+    source: "K8s config best practice (kubernetes.io docs); tfsec/checkov analogue"
+    description: "Reject containers whose image has no tag or ':latest'"
+  - id: R09
+    name: require-resource-limits
+    source: "CIS K8s 5.x / LimitRange rationale"
+    description: "Require cpu+memory limits on every container"
+  - id: R10
+    name: allowed-image-registries
+    source: "NIST 800-190 4.1.1 (image provenance)"
+    description: "Images must come from an allowlisted registry prefix"
+  - id: R11
+    name: require-app-label
+    source: "K8s recommended labels (kubernetes.io)"
+    description: "Require label app.kubernetes.io/name on pods"
+  - id: R12
+    name: disallow-nodeport-services
+    source: "CIS K8s 5.x network exposure rationale"
+    description: "Reject Services of type NodePort"
+  - id: R13
+    name: require-readonly-rootfs
+    source: "NIST 800-190 / container hardening"
+    description: "Require readOnlyRootFilesystem=true on all containers"
+  - id: R14
+    name: disallow-default-sa-automount
+    source: "CIS K8s 5.1.5-5.1.6"
+    description: "Reject pods that automount the default service account token"
+  - id: R15
+    name: require-seccomp-runtime-default
+    source: "PSS restricted (seccompProfile)"
+    description: "Require seccompProfile.type=RuntimeDefault"

@@ -1,0 +1,302 @@
+# OPA Gatekeeper implementations of the corpus (R01–R15).
+# ConstraintTemplates (Rego) followed by Constraints. enforcementAction defaults to deny.
+apiVersion: templates.gatekeeper.sh/v1
+kind: ConstraintTemplate
+metadata:
+  name: r01disallowprivileged
+spec:
+  crd:
+    spec:
+      names: {kind: R01DisallowPrivileged}
+  targets:
+    - target: admission.k8s.gatekeeper.sh
+      rego: |
+        package r01
+        containers := input.review.object.spec.containers
+        init_containers := object.get(input.review.object.spec, "initContainers", [])
+        all_containers := array.concat(containers, init_containers)
+        violation[{"msg": msg}] {
+          c := all_containers[_]
+          c.securityContext.privileged == true
+          msg := sprintf("R01: privileged container %v", [c.name])
+        }
+---
+apiVersion: templates.gatekeeper.sh/v1
+kind: ConstraintTemplate
+metadata:
+  name: r02disallowhostnetwork
+spec:
+  crd:
+    spec:
+      names: {kind: R02DisallowHostNetwork}
+  targets:
+    - target: admission.k8s.gatekeeper.sh
+      rego: |
+        package r02
+        violation[{"msg": msg}] {
+          input.review.object.spec.hostNetwork == true
+          msg := "R02: hostNetwork is not allowed"
+        }
+---
+apiVersion: templates.gatekeeper.sh/v1
+kind: ConstraintTemplate
+metadata:
+  name: r03disallowhostpidipc
+spec:
+  crd:
+    spec:
+      names: {kind: R03DisallowHostPidIpc}
+  targets:
+    - target: admission.k8s.gatekeeper.sh
+      rego: |
+        package r03
+        violation[{"msg": msg}] {
+          input.review.object.spec.hostPID == true
+          msg := "R03: hostPID is not allowed"
+        }
+        violation[{"msg": msg}] {
+          input.review.object.spec.hostIPC == true
+          msg := "R03: hostIPC is not allowed"
+        }
+---
+apiVersion: templates.gatekeeper.sh/v1
+kind: ConstraintTemplate
+metadata:
+  name: r04disallowhostpath
+spec:
+  crd:
+    spec:
+      names: {kind: R04DisallowHostPath}
+  targets:
+    - target: admission.k8s.gatekeeper.sh
+      rego: |
+        package r04
+        violation[{"msg": msg}] {
+          v := input.review.object.spec.volumes[_]
+          v.hostPath
+          msg := sprintf("R04: hostPath volume %v", [v.name])
+        }
+---
+apiVersion: templates.gatekeeper.sh/v1
+kind: ConstraintTemplate
+metadata:
+  name: r05requirerunasnonroot
+spec:
+  crd:
+    spec:
+      names: {kind: R05RequireRunAsNonRoot}
+  targets:
+    - target: admission.k8s.gatekeeper.sh
+      rego: |
+        package r05
+        pod_nonroot {
+          input.review.object.spec.securityContext.runAsNonRoot == true
+        }
+        all_containers_nonroot {
+          containers := input.review.object.spec.containers
+          count([c | c := containers[_]; c.securityContext.runAsNonRoot == true]) == count(containers)
+        }
+        violation[{"msg": msg}] {
+          not pod_nonroot
+          not all_containers_nonroot
+          msg := "R05: runAsNonRoot must be true"
+        }
+---
+apiVersion: templates.gatekeeper.sh/v1
+kind: ConstraintTemplate
+metadata:
+  name: r06disallowprivesc
+spec:
+  crd:
+    spec:
+      names: {kind: R06DisallowPrivEsc}
+  targets:
+    - target: admission.k8s.gatekeeper.sh
+      rego: |
+        package r06
+        violation[{"msg": msg}] {
+          c := input.review.object.spec.containers[_]
+          not c.securityContext.allowPrivilegeEscalation == false
+          msg := sprintf("R06: allowPrivilegeEscalation must be false on %v", [c.name])
+        }
+---
+apiVersion: templates.gatekeeper.sh/v1
+kind: ConstraintTemplate
+metadata:
+  name: r07dropallcapabilities
+spec:
+  crd:
+    spec:
+      names: {kind: R07DropAllCapabilities}
+  targets:
+    - target: admission.k8s.gatekeeper.sh
+      rego: |
+        package r07
+        violation[{"msg": msg}] {
+          c := input.review.object.spec.containers[_]
+          drops := object.get(object.get(object.get(c, "securityContext", {}), "capabilities", {}), "drop", [])
+          count([d | d := drops[_]; d == "ALL"]) == 0
+          msg := sprintf("R07: container %v must drop ALL capabilities", [c.name])
+        }
+---
+apiVersion: templates.gatekeeper.sh/v1
+kind: ConstraintTemplate
+metadata:
+  name: r08disallowlatesttag
+spec:
+  crd:
+    spec:
+      names: {kind: R08DisallowLatestTag}
+  targets:
+    - target: admission.k8s.gatekeeper.sh
+      rego: |
+        package r08
+        violation[{"msg": msg}] {
+          c := input.review.object.spec.containers[_]
+          not contains(c.image, ":")
+          msg := sprintf("R08: image %v has no tag", [c.image])
+        }
+        violation[{"msg": msg}] {
+          c := input.review.object.spec.containers[_]
+          endswith(c.image, ":latest")
+          msg := sprintf("R08: image %v uses latest tag", [c.image])
+        }
+---
+apiVersion: templates.gatekeeper.sh/v1
+kind: ConstraintTemplate
+metadata:
+  name: r09requireresourcelimits
+spec:
+  crd:
+    spec:
+      names: {kind: R09RequireResourceLimits}
+  targets:
+    - target: admission.k8s.gatekeeper.sh
+      rego: |
+        package r09
+        violation[{"msg": msg}] {
+          c := input.review.object.spec.containers[_]
+          limits := object.get(object.get(c, "resources", {}), "limits", {})
+          missing := {"cpu", "memory"} - {k | limits[k]}
+          count(missing) > 0
+          msg := sprintf("R09: container %v missing limits %v", [c.name, missing])
+        }
+---
+apiVersion: templates.gatekeeper.sh/v1
+kind: ConstraintTemplate
+metadata:
+  name: r10allowedregistries
+spec:
+  crd:
+    spec:
+      names: {kind: R10AllowedRegistries}
+  targets:
+    - target: admission.k8s.gatekeeper.sh
+      rego: |
+        package r10
+        allowed := {"registry.example.com/", "docker.io/library/", "library/"}
+        violation[{"msg": msg}] {
+          c := input.review.object.spec.containers[_]
+          count([p | p := allowed[_]; startswith(c.image, p)]) == 0
+          msg := sprintf("R10: image %v not from allowlisted registry", [c.image])
+        }
+---
+apiVersion: templates.gatekeeper.sh/v1
+kind: ConstraintTemplate
+metadata:
+  name: r11requireapplabel
+spec:
+  crd:
+    spec:
+      names: {kind: R11RequireAppLabel}
+  targets:
+    - target: admission.k8s.gatekeeper.sh
+      rego: |
+        package r11
+        violation[{"msg": msg}] {
+          labels := object.get(input.review.object.metadata, "labels", {})
+          not labels["app.kubernetes.io/name"]
+          msg := "R11: label app.kubernetes.io/name is required"
+        }
+---
+apiVersion: templates.gatekeeper.sh/v1
+kind: ConstraintTemplate
+metadata:
+  name: r12disallownodeport
+spec:
+  crd:
+    spec:
+      names: {kind: R12DisallowNodePort}
+  targets:
+    - target: admission.k8s.gatekeeper.sh
+      rego: |
+        package r12
+        violation[{"msg": msg}] {
+          input.review.object.spec.type == "NodePort"
+          msg := "R12: NodePort services are not allowed"
+        }
+---
+apiVersion: templates.gatekeeper.sh/v1
+kind: ConstraintTemplate
+metadata:
+  name: r13requirereadonlyrootfs
+spec:
+  crd:
+    spec:
+      names: {kind: R13RequireReadonlyRootfs}
+  targets:
+    - target: admission.k8s.gatekeeper.sh
+      rego: |
+        package r13
+        violation[{"msg": msg}] {
+          c := input.review.object.spec.containers[_]
+          not c.securityContext.readOnlyRootFilesystem == true
+          msg := sprintf("R13: readOnlyRootFilesystem must be true on %v", [c.name])
+        }
+---
+apiVersion: templates.gatekeeper.sh/v1
+kind: ConstraintTemplate
+metadata:
+  name: r14disallowdefaultsaautomount
+spec:
+  crd:
+    spec:
+      names: {kind: R14DisallowDefaultSaAutomount}
+  targets:
+    - target: admission.k8s.gatekeeper.sh
+      rego: |
+        package r14
+        uses_default_sa {
+          sa := object.get(input.review.object.spec, "serviceAccountName", "default")
+          sa == "default"
+        }
+        violation[{"msg": msg}] {
+          uses_default_sa
+          not input.review.object.spec.automountServiceAccountToken == false
+          msg := "R14: default SA token automount must be disabled"
+        }
+---
+apiVersion: templates.gatekeeper.sh/v1
+kind: ConstraintTemplate
+metadata:
+  name: r15requireseccomp
+spec:
+  crd:
+    spec:
+      names: {kind: R15RequireSeccomp}
+  targets:
+    - target: admission.k8s.gatekeeper.sh
+      rego: |
+        package r15
+        pod_ok {
+          input.review.object.spec.securityContext.seccompProfile.type == "RuntimeDefault"
+        }
+        all_containers_ok {
+          containers := input.review.object.spec.containers
+          count([c | c := containers[_]; c.securityContext.seccompProfile.type == "RuntimeDefault"]) == count(containers)
+        }
+        violation[{"msg": msg}] {
+          not pod_ok
+          not all_containers_ok
+          msg := "R15: seccompProfile.type=RuntimeDefault required"
+        }
