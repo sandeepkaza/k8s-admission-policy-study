@@ -2,7 +2,7 @@
 
 Corpus, implementations, benchmark harness, and raw data for the paper
 *"Native CEL or Webhook? An Empirical Comparison of Kubernetes
-Admission-Policy Engines"* (V. S. C. Kaza, 2026).
+Admission-Policy Engines"* (Venkata Sandeep Chowdary Kaza, 2026).
 
 Three engines compared on a fixed 15-rule reference corpus:
 
